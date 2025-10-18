@@ -121,3 +121,52 @@
                                 <label for="event-name">Event Name *</label>
                                 <input type="text" id="event-name" name="name" required>
                             </div>
+                            <div class="form-group">
+                                <label for="event-category">Category *</label>
+                                <select id="event-category" name="category" required>
+                                    <option value="">Select Category</option>
+                                    <option value="fun run">Fun Run</option>
+                                    <option value="gala">Gala</option>
+                                    <option value="auction">Auction</option>
+                                    <option value="food festival">Food Festival</option>
+                                    <option value="concert">Concert</option>
+                                    <option value="workshop">Workshop</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="event-location">Location *</label>
+                                <input type="text" id="event-location" name="location" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="event-image">Image URL</label>
+                                <input type="url" id="event-image" name="image_url">
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="event-start-date">Start Date *</label>
+                                <input type="date" id="event-start-date" name="event_start_date" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="event-end-date">End Date *</label>
+                                <input type="date" id="event-end-date" name="event_end_date" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-section">
+                        <h3>Event Details</h3>
+                        <div class="form-group">
+                            <label for="event-description">Description</label>
+                            <textarea id="event-description" name="description" rows="4"></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="event-purpose">Purpose</label>
+                            <textarea id="event-purpose" name="purpose" rows="3"></textarea>
+                        </div>
+                    </div>

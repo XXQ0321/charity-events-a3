@@ -75,3 +75,49 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Manage Events Page -->
+            <div id="events-page" class="admin-page">
+                <div class="page-header">
+                    <h2>Manage Events</h2>
+                    <button class="btn btn-primary" onclick="showAdminPage('create-event')">
+                        <i class="fas fa-plus"></i> Create New Event
+                    </button>
+                </div>
+                
+                <div class="events-table-container">
+                    <table class="events-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Category</th>
+                                <th>Location</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="events-table-body">
+                            <!-- Events will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Create Event Page -->
+            <div id="create-event-page" class="admin-page">
+                <div class="page-header">
+                    <h2>Create New Event</h2>
+                    <button class="btn btn-secondary" onclick="showAdminPage('events')">
+                        <i class="fas fa-arrow-left"></i> Back to Events
+                    </button>
+                </div>
+                
+                <form id="create-event-form" class="event-form">
+                    <div class="form-section">
+                        <h3>Basic Information</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="event-name">Event Name *</label>
+                                <input type="text" id="event-name" name="name" required>
+                            </div>

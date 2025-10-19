@@ -170,3 +170,86 @@
                             <textarea id="event-purpose" name="purpose" rows="3"></textarea>
                         </div>
                     </div>
+                    
+                    <div class="form-section">
+                        <h3>Registration & Funding</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="ticket-price">Ticket Price ($)</label>
+                                <input type="number" id="ticket-price" name="ticket_price" min="0" step="0.01" value="0">
+                            </div>
+                            <div class="form-group">
+                                <label for="goal-amount">Goal Amount ($)</label>
+                                <input type="number" id="goal-amount" name="goal_amount" min="0" step="0.01" value="0">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="registration-form">Registration Form Notes</label>
+                            <textarea id="registration-form" name="registration_form" rows="3"></textarea>
+                        </div>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Create Event</button>
+                        <button type="button" class="btn btn-secondary" onclick="showAdminPage('events')">Cancel</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Edit Event Page -->
+            <div id="edit-event-page" class="admin-page">
+                <div class="page-header">
+                    <h2>Edit Event</h2>
+                    <button class="btn btn-secondary" onclick="showAdminPage('events')">
+                        <i class="fas fa-arrow-left"></i> Back to Events
+                    </button>
+                </div>
+                
+                <form id="edit-event-form" class="event-form">
+                    <input type="hidden" id="edit-event-id" name="id">
+                    <!-- Form content same as create event form -->
+                    <div class="form-section">
+                        <h3>Basic Information</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="edit-event-name">Event Name *</label>
+                                <input type="text" id="edit-event-name" name="name" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="edit-event-category">Category *</label>
+                                <select id="edit-event-category" name="category" required>
+                                    <option value="">Select Category</option>
+                                    <option value="fun run">Fun Run</option>
+                                    <option value="gala">Gala</option>
+                                    <option value="auction">Auction</option>
+                                    <option value="food festival">Food Festival</option>
+                                    <option value="concert">Concert</option>
+                                    <option value="workshop">Workshop</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="edit-event-location">Location *</label>
+                                <input type="text" id="edit-event-location" name="location" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="edit-event-image">Image URL</label>
+                                <input type="url" id="edit-event-image" name="image_url">
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="edit-event-start-date">Start Date *</label>
+                                <input type="date" id="edit-event-start-date" name="event_start_date" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="edit-event-end-date">End Date *</label>
+                                <input type="date" id="edit-event-end-date" name="event_end_date" required>
+                            </div>
+                        </div>
+                    </div>
+                    

@@ -47,3 +47,120 @@ function showPage(pageName) {
         resultsContainer.innerHTML = "";
       }
     } else if (pageName === "event-detail") {
+
+    const detailContent = document.getElementById("event-detail-content");
+      if (detailContent && detailContent.innerHTML.trim() === '') {
+        setTimeout(() => {
+          if (detailContent.innerHTML.trim() === '') {
+            showPage('home');
+          }
+        }, 100);
+      }
+    }
+  }
+
+  updateActiveNavLink(pageName);
+}
+
+function updateActiveNavLink(pageName) {
+  const navLinks = document.querySelectorAll(".nav-menu a");
+  navLinks.forEach(link => {
+    link.classList.remove("active");
+    if (link.getAttribute("onclick") && link.getAttribute("onclick").includes(`'${pageName}'`)) {
+      link.classList.add("active");
+    }
+  });
+}
+
+async function loadCategories() {
+  try {
+    const response = await fetch(`${API_BASE_URL}/categories`);
+    categories = await response.json();
+    
+    const categorySelect = document.getElementById("category");
+    if (categorySelect) {
+      categorySelect.innerHTML = '<option value="">All Categories</option>';
+      
+      categories.forEach(category => {
+        const option = document.createElement("option");
+        option.value = category;
+        option.textContent = category.charAt(0).toUpperCase() + category.slice(1);
+        categorySelect.appendChild(option);
+      });
+    }
+  } catch (error) {
+    console.error("Error loading categories:", error);
+  }
+}
+
+async function loadAllEvents() {
+  try {
+    const response = await fetch(`${API_BASE_URL}/events`);
+    allEvents = await response.json();
+  } catch (error) {
+    console.error("Error loading events:", error);
+  }
+}
+function displayEventsByCategory() {
+  const container = document.getElementById("events-container");
+  if (!container) return;
+  
+  container.innerHTML = "";
+  
+  const eventsByCategory = {};
+  allEvents.forEach((event) => {
+    if (!eventsByCategory[event.category]) {
+      eventsByCategory[event.category] = [];
+    }
+    eventsByCategory[event.category].push(event);
+  });
+
+  Object.keys(eventsByCategory)
+    .sort()
+    .forEach((category) => {
+      const categorySection = createCategorySection(
+        category,
+        eventsByCategory[category]
+      );
+      container.appendChild(categorySection);
+    });
+}
+
+function createCategorySection(category, events) {
+  const section = document.createElement("div");
+  section.className = "category-section";
+
+  const header = document.createElement("div");
+  header.className = "category-header";
+  header.innerHTML = `
+        <h3>${category.charAt(0).toUpperCase() + category.slice(1)}</h3>
+        <span class="toggle-icon">▼</span>
+    `;
+  header.onclick = () => toggleCategory(section);
+
+  const eventsContainer = document.createElement("div");
+  eventsContainer.className = "category-events";
+
+  events.forEach((event) => {
+    const eventCard = createEventCard(event);
+    eventsContainer.appendChild(eventCard);
+  });
+
+  section.appendChild(header);
+  section.appendChild(eventsContainer);
+
+  return section;
+}
+
+function toggleCategory(categorySection) {
+  const eventsContainer = categorySection.querySelector(".category-events");
+  const toggleIcon = categorySection.querySelector(".toggle-icon");
+
+  if (eventsContainer.classList.contains("active")) {
+    eventsContainer.classList.remove("active");
+    toggleIcon.textContent = "▼";
+  } else {
+    eventsContainer.classList.add("active");
+    toggleIcon.textContent = "▲";
+  }
+}

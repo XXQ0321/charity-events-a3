@@ -263,3 +263,121 @@ function displayEventDetail(event, registrations) {
   if (!container) return;
 
   const progress = event.goal_amount
+ ? Math.round((event.current_amount / event.goal_amount) * 100)
+    : 0;
+
+  container.innerHTML = `
+        <div class="event-detail-header">
+            <img src="${event.image_url}" alt="${event.name}" class="event-detail-image">
+            <div class="event-detail-info">
+                <h2>${event.name}</h2>
+                <div class="event-meta">
+                    <p><i class="fas fa-calendar"></i> <strong>Date:</strong> ${formatDate(event.event_start_date)} - ${formatDate(event.event_end_date)}</p>
+                    <p><i class="fas fa-map-marker-alt"></i> <strong>Location:</strong> ${event.location}</p>
+                    <p><i class="fas fa-tag"></i> <strong>Category:</strong> ${event.category}</p>
+                    <p><i class="fas fa-info-circle"></i> <strong>Status:</strong> <span class="event-status status-${event.status}">${event.status.toUpperCase()}</span></p>
+                </div>
+                <div class="event-actions">
+                    <button class="btn btn-primary" onclick="showRegistrationPage(${event.id})">Register for this Event</button>
+                    <button class="btn btn-danger" onclick="confirmDelete(${event.id}, '${event.name}')">Delete Event</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="event-description">
+            <h3>About This Event</h3>
+            <p>${event.description || "No description available."}</p>
+            
+            <h3>Purpose</h3>
+            <p>${event.purpose || "No purpose information available."}</p>
+        </div>
+        
+        ${event.goal_amount ? `
+            <div class="progress-section">
+                <h3>Fundraising Progress</h3>
+                <p><strong>Goal:</strong> $${event.goal_amount}</p>
+                <p><strong>Current:</strong> $${event.current_amount}</p>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: ${progress}%">${progress}%</div>
+                </div>
+            </div>
+        ` : ""}
+        
+        <div class="registration-section">
+            <h3>Registration Information</h3>
+            <div class="ticket-info">
+                <p><strong>Ticket Price:</strong> ${event.ticket_price > 0 ? `$${event.ticket_price}` : "Free"}</p>
+                ${event.registration_form ? `<p><strong>Registration Notes:</strong> ${event.registration_form}</p>` : ""}
+            </div>
+        </div>
+        
+        <div class="registrations-section">
+            <h3>Recent Registrations (${registrations.length})</h3>
+            ${registrations.length > 0 ? `
+                <div class="registrations-list">
+                    ${registrations.map(reg => `
+                        <div class="registration-item">
+                            <p><strong>${reg.full_name}</strong> - ${reg.ticket_quantity} ticket(s) - $${reg.total_amount}</p>
+                            <small>Registered on: ${formatDate(reg.registration_date)}</small>
+                        </div>
+                    `).join('')}
+                </div>
+            ` : '<p>No registrations yet. Be the first to register!</p>'}
+        </div>
+    `;
+}
+
+// Registration Page Functions
+function showRegistrationPage(eventId) {
+    localStorage.setItem('currentEventId', eventId);
+    loadRegistrationPageData(eventId);
+    showPage('registration');
+}
+
+async function loadRegistrationPageData(eventId) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/events/${eventId}`);
+        const event = await response.json();
+        
+        // Update event info on registration page
+        document.getElementById('registration-event-name').textContent = event.name;
+        document.getElementById('registration-event-date').textContent = `Date: ${formatDate(event.event_start_date)} - ${formatDate(event.event_end_date)}`;
+        document.getElementById('registration-event-location').textContent = `Location: ${event.location}`;
+        document.getElementById('registration-event-price').textContent = `Ticket Price: ${event.ticket_price > 0 ? `$${event.ticket_price}` : 'Free'}`;
+        
+    } catch (error) {
+        console.error('Error loading event details for registration:', error);
+        showAlert('Error loading event details. Please try again.');
+    }
+}
+
+async function handleRegistration(event) {
+    event.preventDefault();
+    
+    // Hide any previous success message
+    document.getElementById('success-message').style.display = 'none';
+    
+    // Validate form
+    if (!validateRegistrationForm()) {
+        return;
+    }
+    
+    const formData = new FormData(event.target);
+    const eventId = parseInt(localStorage.getItem('currentEventId'));
+    
+    const registrationData = {
+        event_id: eventId,
+        full_name: formData.get('full_name').trim(),
+        email: formData.get('email').trim(),
+        phone: formData.get('phone').trim(),
+        ticket_quantity: parseInt(formData.get('ticket_quantity'))
+    };
+    
+    try {
+        const response = await fetch(`${API_BASE_URL}/registrations`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(registrationData)
+        });

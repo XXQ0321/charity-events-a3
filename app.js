@@ -164,3 +164,102 @@ function toggleCategory(categorySection) {
     toggleIcon.textContent = "▲";
   }
 }
+function createEventCard(event) {
+  const card = document.createElement("div");
+  card.className = "event-card";
+  card.setAttribute('data-event-id', event.id); // 添加数据属性用于调试
+
+  const statusClass = `status-${event.status}`;
+  const progress = event.goal_amount
+    ? Math.round((event.current_amount / event.goal_amount) * 100)
+    : 0;
+
+  card.innerHTML = `
+        <img src="${event.image_url}" alt="${event.name}" class="event-image">
+        <div class="event-content">
+            <span class="event-category">${event.category}</span>
+            <h3 class="event-title">${event.name}</h3>
+            <div class="event-status ${statusClass}">${event.status.toUpperCase()}</div>
+            <div class="event-meta">
+                <span><i class="fas fa-calendar"></i> ${formatDate(event.event_start_date)}</span>
+                <span><i class="fas fa-map-marker-alt"></i> ${event.location}</span>
+            </div>
+            <p class="event-description">${event.description ? event.description.substring(0, 100) + '...' : 'No description available.'}</p>
+            ${event.ticket_price > 0 ? `<div class="event-price">$${event.ticket_price} per ticket</div>` : ''}
+            <div class="event-actions">
+                <button class="btn btn-primary view-details-btn" onclick="showEventDetail(${event.id})" data-event-id="${event.id}">View Details</button>
+                <button class="btn btn-danger delete-btn" onclick="confirmDelete(${event.id}, '${event.name.replace(/'/g, "\\'")}')">Delete</button>
+            </div>
+        </div>
+    `;
+
+  return card;
+}
+async function showEventDetail(eventId) {
+  console.log('Attempting to show event details for ID:', eventId);
+  
+  if (!eventId || isNaN(eventId)) {
+    console.error('Invalid event ID:', eventId);
+    showAlert('Invalid event ID. Please try again.');
+    return;
+  }
+
+  try {
+    const container = document.getElementById("event-detail-content");
+    if (container) {
+      container.innerHTML = '<div class="loading">Loading event details...</div>';
+    }
+
+    const response = await fetch(`${API_BASE_URL}/events/${eventId}`);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const event = await response.json();
+    console.log('Event data loaded successfully:', event);
+    
+    let registrations = [];
+    try {
+      const registrationsResponse = await fetch(`${API_BASE_URL}/events/${eventId}/registrations`);
+      if (registrationsResponse.ok) {
+        registrations = await registrationsResponse.json();
+      }
+    } catch (regError) {
+      console.warn('Could not load registrations:', regError);
+    
+    }
+    
+    displayEventDetail(event, registrations);
+    showPage("event-detail");
+    
+  } catch (error) {
+    console.error("Error loading event details:", error);
+    
+  
+    const errorMessage = error.message.includes('HTTP error') 
+      ? `Server error: ${error.message}` 
+      : 'Error loading event details. Please check your connection and try again.';
+    
+    showAlert(errorMessage);
+    
+    
+    const container = document.getElementById("event-detail-content");
+    if (container) {
+      container.innerHTML = `
+        <div class="error-message">
+          <h3>Error Loading Event Details</h3>
+          <p>${errorMessage}</p>
+          <button class="btn btn-primary" onclick="showPage('home')">Return to Home</button>
+        </div>
+      `;
+      showPage("event-detail");
+    }
+  }
+}
+
+function displayEventDetail(event, registrations) {
+  const container = document.getElementById("event-detail-content");
+  if (!container) return;
+
+  const progress = event.goal_amount

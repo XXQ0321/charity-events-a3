@@ -1,13 +1,24 @@
+let allEvents = [];
+let categories = [];
+let currentEventRegistrations = [];
+let eventToDelete = null;
 
+const API_BASE_URL = window.location.origin + "/api";
+
+// 在 DOMContentLoaded 事件监听器中添加事件委托
+document.addEventListener("DOMContentLoaded", function () {
   initializeApp();
   setupDeleteModal();
-
+  
+  // 添加事件委托来处理动态生成的按钮
   document.addEventListener('click', function(e) {
+    // 处理 View Details 按钮
     if (e.target.classList.contains('btn-primary') && 
         (e.target.textContent.includes('View Details') || e.target.closest('.btn-primary')?.textContent.includes('View Details'))) {
       
       const button = e.target.classList.contains('btn-primary') ? e.target : e.target.closest('.btn-primary');
       if (button) {
+        // 从按钮的 onclick 属性中提取事件ID
         const onclickAttr = button.getAttribute('onclick');
         if (onclickAttr && onclickAttr.includes('showEventDetail')) {
           const match = onclickAttr.match(/showEventDetail\((\d+)\)/);
@@ -16,6 +27,7 @@
             showEventDetail(eventId);
           }
         } else {
+          // 如果没有 onclick 属性，尝试从数据属性获取
           const eventId = button.getAttribute('data-event-id');
           if (eventId) {
             showEventDetail(parseInt(eventId));
@@ -32,6 +44,7 @@ async function initializeApp() {
   showPage("home");
 }
 
+// 在 showPage 函数中添加事件详情页面的特殊处理
 function showPage(pageName) {
   const pages = document.querySelectorAll(".page");
   pages.forEach((page) => (page.style.display = "none"));
@@ -47,8 +60,8 @@ function showPage(pageName) {
         resultsContainer.innerHTML = "";
       }
     } else if (pageName === "event-detail") {
-
-    const detailContent = document.getElementById("event-detail-content");
+      // 确保事件详情页面有内容，如果没有则返回首页
+      const detailContent = document.getElementById("event-detail-content");
       if (detailContent && detailContent.innerHTML.trim() === '') {
         setTimeout(() => {
           if (detailContent.innerHTML.trim() === '') {
@@ -56,6 +69,9 @@ function showPage(pageName) {
           }
         }, 100);
       }
+    } else if (pageName === "registration") {
+      // 重置注册表单状态
+      resetRegistrationForm();
     }
   }
 
@@ -101,6 +117,7 @@ async function loadAllEvents() {
     console.error("Error loading events:", error);
   }
 }
+
 function displayEventsByCategory() {
   const container = document.getElementById("events-container");
   if (!container) return;
@@ -164,6 +181,8 @@ function toggleCategory(categorySection) {
     toggleIcon.textContent = "▲";
   }
 }
+
+// 更新 createEventCard 函数，确保事件ID正确传递
 function createEventCard(event) {
   const card = document.createElement("div");
   card.className = "event-card";
@@ -195,6 +214,8 @@ function createEventCard(event) {
 
   return card;
 }
+
+// 确保 showEventDetail 函数有详细的错误处理
 async function showEventDetail(eventId) {
   console.log('Attempting to show event details for ID:', eventId);
   
@@ -205,6 +226,7 @@ async function showEventDetail(eventId) {
   }
 
   try {
+    // 显示加载状态
     const container = document.getElementById("event-detail-content");
     if (container) {
       container.innerHTML = '<div class="loading">Loading event details...</div>';
@@ -219,6 +241,7 @@ async function showEventDetail(eventId) {
     const event = await response.json();
     console.log('Event data loaded successfully:', event);
     
+    // 获取注册信息
     let registrations = [];
     try {
       const registrationsResponse = await fetch(`${API_BASE_URL}/events/${eventId}/registrations`);
@@ -227,7 +250,7 @@ async function showEventDetail(eventId) {
       }
     } catch (regError) {
       console.warn('Could not load registrations:', regError);
-    
+      // 继续显示事件详情，即使注册信息加载失败
     }
     
     displayEventDetail(event, registrations);
@@ -236,14 +259,14 @@ async function showEventDetail(eventId) {
   } catch (error) {
     console.error("Error loading event details:", error);
     
-  
+    // 显示更详细的错误信息
     const errorMessage = error.message.includes('HTTP error') 
       ? `Server error: ${error.message}` 
       : 'Error loading event details. Please check your connection and try again.';
     
     showAlert(errorMessage);
     
-    
+    // 在事件详情容器中显示错误
     const container = document.getElementById("event-detail-content");
     if (container) {
       container.innerHTML = `
@@ -263,8 +286,14 @@ function displayEventDetail(event, registrations) {
   if (!container) return;
 
   const progress = event.goal_amount
- ? Math.round((event.current_amount / event.goal_amount) * 100)
+    ? Math.round((event.current_amount / event.goal_amount) * 100)
     : 0;
+
+  // 检查当前用户是否已经注册（通过localStorage存储的用户标识）
+  const userEmail = localStorage.getItem('userEmail');
+  const isUserRegistered = userEmail ? registrations.some(reg => 
+      reg.email.toLowerCase() === userEmail.toLowerCase()
+  ) : false;
 
   container.innerHTML = `
         <div class="event-detail-header">
@@ -277,6 +306,12 @@ function displayEventDetail(event, registrations) {
                     <p><i class="fas fa-tag"></i> <strong>Category:</strong> ${event.category}</p>
                     <p><i class="fas fa-info-circle"></i> <strong>Status:</strong> <span class="event-status status-${event.status}">${event.status.toUpperCase()}</span></p>
                 </div>
+                ${isUserRegistered ? `
+                    <div class="already-registered-banner">
+                        <i class="fas fa-check-circle"></i>
+                        You are already registered for this event
+                    </div>
+                ` : ''}
                 <div class="event-actions">
                     <button class="btn btn-primary" onclick="showRegistrationPage(${event.id})">Register for this Event</button>
                     <button class="btn btn-danger" onclick="confirmDelete(${event.id}, '${event.name}')">Delete Event</button>
@@ -308,6 +343,7 @@ function displayEventDetail(event, registrations) {
             <div class="ticket-info">
                 <p><strong>Ticket Price:</strong> ${event.ticket_price > 0 ? `$${event.ticket_price}` : "Free"}</p>
                 ${event.registration_form ? `<p><strong>Registration Notes:</strong> ${event.registration_form}</p>` : ""}
+                <p class="registration-note"><i class="fas fa-info-circle"></i> <strong>Note:</strong> Each email address can only register once per event.</p>
             </div>
         </div>
         
@@ -351,11 +387,31 @@ async function loadRegistrationPageData(eventId) {
     }
 }
 
+// 重置注册表单状态
+function resetRegistrationForm() {
+    const emailInput = document.getElementById('email');
+    if (emailInput) {
+        emailInput.classList.remove('email-registered');
+    }
+    
+    // 隐藏所有错误消息
+    hideFieldError('name-error');
+    hideFieldError('email-error');
+    hideFieldError('phone-error');
+    hideFieldError('ticket-error');
+    
+    // 隐藏警告和成功消息
+    document.getElementById('duplicate-warning').style.display = 'none';
+    document.getElementById('success-message').style.display = 'none';
+}
+
+// 修复的注册处理函数
 async function handleRegistration(event) {
     event.preventDefault();
     
-    // Hide any previous success message
+    // Hide any previous success message and warnings
     document.getElementById('success-message').style.display = 'none';
+    document.getElementById('duplicate-warning').style.display = 'none';
     
     // Validate form
     if (!validateRegistrationForm()) {
@@ -364,11 +420,33 @@ async function handleRegistration(event) {
     
     const formData = new FormData(event.target);
     const eventId = parseInt(localStorage.getItem('currentEventId'));
+    const email = formData.get('email').trim().toLowerCase();
+    
+    // 检查是否已经注册过 - 通过获取所有注册记录来检查
+    try {
+        const registrationsResponse = await fetch(`${API_BASE_URL}/events/${eventId}/registrations`);
+        if (registrationsResponse.ok) {
+            const registrations = await registrationsResponse.json();
+            const isAlreadyRegistered = registrations.some(reg => 
+                reg.email.toLowerCase() === email
+            );
+            
+            if (isAlreadyRegistered) {
+                document.getElementById('duplicate-warning').style.display = 'block';
+                document.getElementById('email').classList.add('email-registered');
+                showFieldError('email-error', 'This email has already been used to register for this event');
+                return;
+            }
+        }
+    } catch (error) {
+        console.error('Error checking existing registration:', error);
+        // 如果检查失败，继续注册过程，让后端处理重复检查
+    }
     
     const registrationData = {
         event_id: eventId,
         full_name: formData.get('full_name').trim(),
-        email: formData.get('email').trim(),
+        email: email,
         phone: formData.get('phone').trim(),
         ticket_quantity: parseInt(formData.get('ticket_quantity'))
     };
@@ -381,17 +459,21 @@ async function handleRegistration(event) {
             },
             body: JSON.stringify(registrationData)
         });
-
-  if (response.ok) {
+        
+        if (response.ok) {
             const result = await response.json();
+            
+            // 保存用户邮箱到localStorage，用于标识用户
+            localStorage.setItem('userEmail', registrationData.email);
             
             // Show success message
             const successMessage = document.getElementById('success-message');
             successMessage.textContent = `Registration successful! ${registrationData.ticket_quantity} ticket(s) have been reserved. Total amount: $${result.total_amount}`;
             successMessage.style.display = 'block';
             
-            // Reset form
+            // Reset form and remove error styles
             event.target.reset();
+            document.getElementById('email').classList.remove('email-registered');
             
             // Auto-navigate back to event detail page after 3 seconds
             setTimeout(() => {
@@ -399,8 +481,14 @@ async function handleRegistration(event) {
             }, 3000);
             
         } else {
-            const error = await response.json();
-            showAlert(`Registration failed: ${error.error}`);
+            const errorData = await response.json();
+            if (errorData.error && errorData.error.toLowerCase().includes('already registered')) {
+                document.getElementById('duplicate-warning').style.display = 'block';
+                document.getElementById('email').classList.add('email-registered');
+                showFieldError('email-error', 'This email has already been used to register for this event');
+            } else {
+                showAlert(`Registration failed: ${errorData.error}`);
+            }
         }
     } catch (error) {
         console.error('Error submitting registration:', error);
@@ -466,6 +554,43 @@ function hideFieldError(elementId) {
     element.style.display = 'none';
 }
 
+// 检查邮箱可用性的函数
+async function checkEmailAvailability(email) {
+    const eventId = parseInt(localStorage.getItem('currentEventId'));
+    
+    if (!email || !eventId) return;
+    
+    // 基本邮箱格式验证
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+        return; // 让基本的验证错误处理这个
+    }
+    
+    try {
+        const registrationsResponse = await fetch(`${API_BASE_URL}/events/${eventId}/registrations`);
+        if (registrationsResponse.ok) {
+            const registrations = await registrationsResponse.json();
+            const isAlreadyRegistered = registrations.some(reg => 
+                reg.email.toLowerCase() === email.toLowerCase()
+            );
+            
+            if (isAlreadyRegistered) {
+                document.getElementById('email').classList.add('email-registered');
+                showFieldError('email-error', 'This email has already been used to register for this event');
+                document.getElementById('duplicate-warning').style.display = 'block';
+            } else {
+                // 如果邮箱可用，确保移除错误状态
+                document.getElementById('email').classList.remove('email-registered');
+                hideFieldError('email-error');
+                document.getElementById('duplicate-warning').style.display = 'none';
+            }
+        }
+    } catch (error) {
+        console.error('Error checking email availability:', error);
+        // 如果检查失败，不阻止用户继续
+    }
+}
+
 // Add real-time form validation
 document.addEventListener('DOMContentLoaded', function() {
     // Name validation
@@ -480,16 +605,28 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Email validation
+    // 邮箱验证 - 添加重复检查
     const emailInput = document.getElementById('email');
     if (emailInput) {
+        let checkTimeout;
+        
+        emailInput.addEventListener('input', function() {
+            // 清除之前的定时器
+            clearTimeout(checkTimeout);
+            
+            // 移除错误状态
+            this.classList.remove('email-registered');
+            hideFieldError('email-error');
+            document.getElementById('duplicate-warning').style.display = 'none';
+            
+            // 设置新的定时器，延迟检查
+            checkTimeout = setTimeout(() => {
+                checkEmailAvailability(this.value.trim());
+            }, 500);
+        });
+        
         emailInput.addEventListener('blur', function() {
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!this.value.trim() || !emailRegex.test(this.value)) {
-                showFieldError('email-error', 'Please enter a valid email address');
-            } else {
-                hideFieldError('email-error');
-            }
+            checkEmailAvailability(this.value.trim());
         });
     }
     
@@ -591,6 +728,7 @@ function displaySearchResults(results) {
 
   container.innerHTML = resultsHtml;
 }
+
 // 添加调试函数到全局作用域
 window.debugEvents = function() {
   console.log('All Events:', allEvents);
